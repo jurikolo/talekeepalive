@@ -35,15 +35,12 @@ public class Application {
     public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
         return args -> {
 
+            log.info("Execute GET request in order to fetch CSRFToken");
             ResponseEntity<Object> responseEntity = restTemplate.getForEntity(
                     "http://the-tale.org/api/info?api_version=1.0&api_client=jurikolo-1", Object.class);
-            log.info("Headers: " + responseEntity.getHeaders().toString());
 
-            Map<String, String> headersMap = responseEntity.getHeaders().toSingleValueMap();
-            //log.info("Cookies: " + headersMap.get("Set-Cookie"));
             String sessionid = "";
             String csrftoken = "";
-            log.info(responseEntity.getHeaders().get("Set-Cookie").toString());
             for (String cookie: responseEntity.getHeaders().get("Set-Cookie")) {
                 if (cookie.startsWith("sessionid=")) {
                     sessionid = cookie.substring(0, cookie.indexOf(";"));
@@ -53,14 +50,12 @@ public class Application {
                 }
             }
 
-            log.info("SessionId = " + sessionid + "; CSRFToken = " + csrftoken);
-
-
             log.info("Now it's time to authorize");
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.add("Cookie", sessionid);
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            //headers.add("Cookie", sessionid);
             headers.add("Cookie", csrftoken);
+            headers.add("X-CSRFToken", csrftoken.replace("csrftoken=",""));
 
             MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
             map.add("email", "jurikolo@yandex.com");
