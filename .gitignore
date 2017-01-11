@@ -1,0 +1,13 @@
+# Ignore following directories and files
+
+#Intellij Idea
+.idea/
+*.iml
+
+# binaries
+bin/
+target/
+*.class
+
+# some non-source directories and files
+*.log
