@@ -11,3 +11,4 @@ target/
 
 # some non-source directories and files
 *.log
+resources/*
