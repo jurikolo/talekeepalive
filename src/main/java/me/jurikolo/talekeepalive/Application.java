@@ -15,8 +15,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
-
 @SpringBootApplication
 public class Application {
 
@@ -35,12 +33,18 @@ public class Application {
     public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
         return args -> {
 
+            String propPath = "resources/auth.properties";
+
+            TaleProperties properties = new TaleProperties();
+            properties.getPropValues(propPath);
+            log.info(properties.getPropValues(propPath).getId());
+
             log.info("Execute GET request in order to fetch CSRFToken");
             ResponseEntity<Object> responseEntity = restTemplate.getForEntity(
-                    "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=10745", Object.class);
+                    "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + properties.getPropValues(propPath).getId(), Object.class);
 
             String body = responseEntity.getBody().toString();
-            log.info(body);
+            log.debug(body);
             if (body.contains("alive=true")) {
                 log.info("Hero is alive");
             } else {
@@ -55,8 +59,8 @@ public class Application {
                     }
                 }
 
-                log.info("Session id: " + sessionid);
-                log.info("CSRF token: " + csrftoken);
+                log.debug("Session id: " + sessionid);
+                log.debug("CSRF token: " + csrftoken);
 
                 log.info("Now it's time to authorize");
                 HttpHeaders headers = new HttpHeaders();
@@ -65,14 +69,13 @@ public class Application {
                 headers.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
 
                 MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
-                map.add("email", "jurikolo@yandex.com");
-                map.add("password", "Привет, Андрей!");
-                //map.add("remember", "false");
+                map.add("email", properties.getPropValues(propPath).getUsername());
+                map.add("password", properties.getPropValues(propPath).getPassword());
 
                 HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
                 ResponseEntity<String> response = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
-                log.info(response.toString());
+                log.debug(response.toString());
 
                 for (String cookie : response.getHeaders().get("Set-Cookie")) {
                     if (cookie.startsWith("sessionid=")) {
@@ -82,8 +85,9 @@ public class Application {
                         csrftoken = cookie.substring(0, cookie.indexOf(";"));
                     }
                 }
-                log.info("Session id: " + sessionid);
-                log.info("CSRF token: " + csrftoken);
+
+                log.debug("Session id: " + sessionid);
+                log.debug("CSRF token: " + csrftoken);
 
                 HttpHeaders headers2 = new HttpHeaders();
                 headers2.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -97,7 +101,7 @@ public class Application {
 
                 HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
-                ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&account=10745&api_client=jurikolo-1", request2, String.class);
+                ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&api_client=jurikolo-1&account=" + properties.getPropValues(propPath).getId(), request2, String.class);
                 log.info(response2.toString());
 
             }
