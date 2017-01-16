@@ -67,7 +67,7 @@ public class Application {
             log.info("Max energy: " + rootObject.getData().getAccount().getHero().getEnergy().getMax());
             log.info("Current energy: " + rootObject.getData().getAccount().getHero().getEnergy().getValue());
             if(
-                    //rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
+                    rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
                 ResponseEntity<Object> objectResponseEntity = restTemplate.getForEntity(
@@ -75,17 +75,11 @@ public class Application {
                 WebHeadersService webHeadersService = new WebHeadersService();
                 WebHeaders webHeaders = webHeadersService.getHeadersByObject(objectResponseEntity);
 
-                String sessionid = webHeaders.getSessionid();
-                String csrftoken = webHeaders.getCsrftoken();
-
-                log.info("Session id: " + sessionid);
-                log.info("CSRF token: " + csrftoken);
-
                 log.info("Now it's time to authorize");
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-                headers.add("Cookie", csrftoken);
-                headers.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
+                headers.add("Cookie", webHeaders.getCsrftoken());
+                headers.add("X-CSRFToken", webHeaders.getCsrftoken().replace("csrftoken=", ""));
 
                 MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
                 map.add("email", auth.getUsername());
@@ -95,17 +89,12 @@ public class Application {
 
                 ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
                 webHeaders = webHeadersService.getHeadersByString(stringResponseEntity);
-                sessionid = webHeaders.getSessionid();
-                csrftoken = webHeaders.getCsrftoken();
-
-                log.info("Session id: " + sessionid);
-                log.info("CSRF token: " + csrftoken);
 
                 HttpHeaders headers2 = new HttpHeaders();
                 headers2.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-                headers.add("Cookie", sessionid);
-                headers2.add("Cookie", csrftoken);
-                headers2.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
+                headers.add("Cookie", webHeaders.getSessionid());
+                //headers2.add("Cookie", webHeaders.getCsrftoken());
+                //headers2.add("X-CSRFToken", webHeaders.getCsrftoken().replace("csrftoken=", ""));
 
                 HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
