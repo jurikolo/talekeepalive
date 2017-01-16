@@ -1,5 +1,6 @@
 package me.jurikolo.talekeepalive;
 
+import me.jurikolo.talekeepalive.model.Auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

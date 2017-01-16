@@ -1,5 +1,9 @@
 package me.jurikolo.talekeepalive;
 
+import me.jurikolo.talekeepalive.model.Auth;
+import me.jurikolo.talekeepalive.model.RootObject;
+import me.jurikolo.talekeepalive.model.WebHeaders;
+import me.jurikolo.talekeepalive.service.WebHeadersService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -62,10 +66,8 @@ public class Application {
         try {
             log.info("Max energy: " + rootObject.getData().getAccount().getHero().getEnergy().getMax());
             log.info("Current energy: " + rootObject.getData().getAccount().getHero().getEnergy().getValue());
-            log.info("Action type: " + rootObject.getData().getAccount().getHero().getAction().getType());
-            log.info("Action desc: " + rootObject.getData().getAccount().getHero().getAction().getDescription());
             if(
-                    rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
+                    //rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
                 ResponseEntity<Object> objectResponseEntity = restTemplate.getForEntity(

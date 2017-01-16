@@ -1,4 +1,4 @@
-package me.jurikolo.talekeepalive;
+package me.jurikolo.talekeepalive.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

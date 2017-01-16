@@ -1,5 +1,6 @@
-package me.jurikolo.talekeepalive;
+package me.jurikolo.talekeepalive.service;
 
+import me.jurikolo.talekeepalive.model.WebHeaders;
 import org.springframework.http.ResponseEntity;
 
 /**

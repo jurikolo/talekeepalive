@@ -1,4 +1,4 @@
-package me.jurikolo.talekeepalive;
+package me.jurikolo.talekeepalive.model;
 
 /**
  * Created by jurikolo on 16.01.17.
