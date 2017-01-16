@@ -55,66 +55,73 @@ public class Application {
 
     private void doExec(RestTemplate restTemplate, Auth auth) {
         log.info("Execute GET request in order to fetch CSRFToken");
-        ResponseEntity<Object> responseEntity = restTemplate.getForEntity(
-                "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), Object.class);
+        RootObject rootObject = restTemplate.getForObject(
+                "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), RootObject.class);
 
-        String body = responseEntity.getBody().toString();
-        log.debug(body);
-        if (body.contains("alive=true")) {
-            log.info("Hero is alive");
-        } else {
-            String sessionid = "";
-            String csrftoken = "";
-            for (String cookie : responseEntity.getHeaders().get("Set-Cookie")) {
-                if (cookie.startsWith("sessionid=")) {
-                    sessionid = cookie.substring(0, cookie.indexOf(";"));
+        log.info(rootObject.toString());
+        try {
+            log.info("Max energy: " + rootObject.getData().getAccount().getHero().getEnergy().getMax());
+            log.info("Current energy: " + rootObject.getData().getAccount().getHero().getEnergy().getValue());
+            log.info("Action type: " + rootObject.getData().getAccount().getHero().getAction().getType());
+            log.info("Action desc: " + rootObject.getData().getAccount().getHero().getAction().getDescription());
+            if(
+                    //rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
+                    rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
+                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
+                ResponseEntity<Object> responseEntity = restTemplate.getForEntity(
+                        "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), Object.class);
+                String sessionid = "";
+                String csrftoken = "";
+                for (String cookie : responseEntity.getHeaders().get("Set-Cookie")) {
+                    if (cookie.startsWith("sessionid=")) {
+                        sessionid = cookie.substring(0, cookie.indexOf(";"));
+                    }
+                    if (cookie.startsWith("csrftoken=")) {
+                        csrftoken = cookie.substring(0, cookie.indexOf(";"));
+                    }
                 }
-                if (cookie.startsWith("csrftoken=")) {
-                    csrftoken = cookie.substring(0, cookie.indexOf(";"));
+
+                log.info("Session id: " + sessionid);
+                log.info("CSRF token: " + csrftoken);
+
+                log.info("Now it's time to authorize");
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                headers.add("Cookie", csrftoken);
+                headers.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
+
+                MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
+                map.add("email", auth.getUsername());
+                map.add("password", auth.getPassword());
+
+                HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+
+                ResponseEntity<String> response = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
+                for (String cookie : response.getHeaders().get("Set-Cookie")) {
+                    if (cookie.startsWith("sessionid=")) {
+                        sessionid = cookie.substring(0, cookie.indexOf(";"));
+                    }
+                    if (cookie.startsWith("csrftoken=")) {
+                        csrftoken = cookie.substring(0, cookie.indexOf(";"));
+                    }
                 }
+
+                log.info("Session id: " + sessionid);
+                log.info("CSRF token: " + csrftoken);
+
+                HttpHeaders headers2 = new HttpHeaders();
+                headers2.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                headers.add("Cookie", sessionid);
+                headers2.add("Cookie", csrftoken);
+                headers2.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
+
+                HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+
+                ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&api_client=jurikolo-1&account=" + auth.getId(), request2, String.class);
+                log.info(response2.toString());
             }
-
-            log.debug("Session id: " + sessionid);
-            log.debug("CSRF token: " + csrftoken);
-
-            log.info("Now it's time to authorize");
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            headers.add("Cookie", csrftoken);
-            headers.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
-
-            MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
-            map.add("email", auth.getUsername());
-            map.add("password", auth.getPassword());
-
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
-
-            ResponseEntity<String> response = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
-            log.debug(response.toString());
-
-            for (String cookie : response.getHeaders().get("Set-Cookie")) {
-                if (cookie.startsWith("sessionid=")) {
-                    sessionid = cookie.substring(0, cookie.indexOf(";"));
-                }
-                if (cookie.startsWith("csrftoken=")) {
-                    csrftoken = cookie.substring(0, cookie.indexOf(";"));
-                }
-            }
-
-            log.debug("Session id: " + sessionid);
-            log.debug("CSRF token: " + csrftoken);
-
-            HttpHeaders headers2 = new HttpHeaders();
-            headers2.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-            headers.add("Cookie", sessionid);
-            headers2.add("Cookie", csrftoken);
-            headers2.add("X-CSRFToken", csrftoken.replace("csrftoken=", ""));
-
-            HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<MultiValueMap<String, String>>(map, headers);
-
-            ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&api_client=jurikolo-1&account=" + auth.getId(), request2, String.class);
-            log.info(response2.toString());
-
+        } catch(Exception e) {
+            log.error("Exception: " + e);
         }
     }
 }

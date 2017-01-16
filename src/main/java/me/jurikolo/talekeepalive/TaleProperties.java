@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -13,7 +12,7 @@ import java.util.Properties;
  * Created by jurikolo on 12.01.17.
  */
 public class TaleProperties {
-    private static final Logger log = LoggerFactory.getLogger(Application.class);
+    private static final Logger log = LoggerFactory.getLogger(TaleProperties.class);
 
     InputStream inputStream;
 
