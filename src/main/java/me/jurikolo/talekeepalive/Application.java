@@ -20,6 +20,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.util.Calendar;
 
 @SpringBootApplication
 public class Application {
@@ -38,6 +39,7 @@ public class Application {
     @Bean
     public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
         return args -> {
+            Calendar now = Calendar.getInstance();
             String propPath = "resources";
             //get list of files
             File dir = new File(propPath);
@@ -51,25 +53,27 @@ public class Application {
                     auth = properties.getPropValues(propPath + "/" + file);
                     log.info(auth.getId());
                     log.info("File: " + file);
-                    doExec(restTemplate, auth);
+                    doExec(restTemplate, auth, now.get(Calendar.MINUTE));
                 }
             }
         };
     }
 
-    private void doExec(RestTemplate restTemplate, Auth auth) {
+    private void doExec(RestTemplate restTemplate, Auth auth, Integer minute) {
         log.info("Execute GET request in order to fetch CSRFToken");
         RootObject rootObject = restTemplate.getForObject(
                 "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), RootObject.class);
 
         log.info(rootObject.toString());
         try {
-            log.info("Max energy: " + rootObject.getData().getAccount().getHero().getEnergy().getMax());
-            log.info("Current energy: " + rootObject.getData().getAccount().getHero().getEnergy().getValue());
             if(
-                    rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
-                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
+                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4") ||
+                    (minute == 1 &&
+                        (rootObject.getData().getAccount().getHero().getAction().getType().equals("2") ||
+                        rootObject.getData().getAccount().getHero().getAction().getType().equals("6") ||
+                        rootObject.getData().getAccount().getHero().getAction().getType().equals("10") ||
+                        rootObject.getData().getAccount().getHero().getAction().getType().equals("15")))) {
                 ResponseEntity<Object> objectResponseEntity = restTemplate.getForEntity(
                         "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), Object.class);
                 WebHeadersService webHeadersService = new WebHeadersService();
@@ -90,11 +94,7 @@ public class Application {
                 ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
                 webHeaders = webHeadersService.getHeadersByString(stringResponseEntity);
 
-                HttpHeaders headers2 = new HttpHeaders();
-                headers2.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
                 headers.add("Cookie", webHeaders.getSessionid());
-                //headers2.add("Cookie", webHeaders.getCsrftoken());
-                //headers2.add("X-CSRFToken", webHeaders.getCsrftoken().replace("csrftoken=", ""));
 
                 HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
