@@ -65,21 +65,16 @@ public class Application {
             log.info("Action type: " + rootObject.getData().getAccount().getHero().getAction().getType());
             log.info("Action desc: " + rootObject.getData().getAccount().getHero().getAction().getDescription());
             if(
-                    //rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
+                    rootObject.getData().getAccount().getHero().getEnergy().getMax().equals(rootObject.getData().getAccount().getHero().getEnergy().getValue()) ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
                     rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
-                ResponseEntity<Object> responseEntity = restTemplate.getForEntity(
+                ResponseEntity<Object> objectResponseEntity = restTemplate.getForEntity(
                         "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), Object.class);
-                String sessionid = "";
-                String csrftoken = "";
-                for (String cookie : responseEntity.getHeaders().get("Set-Cookie")) {
-                    if (cookie.startsWith("sessionid=")) {
-                        sessionid = cookie.substring(0, cookie.indexOf(";"));
-                    }
-                    if (cookie.startsWith("csrftoken=")) {
-                        csrftoken = cookie.substring(0, cookie.indexOf(";"));
-                    }
-                }
+                WebHeadersService webHeadersService = new WebHeadersService();
+                WebHeaders webHeaders = webHeadersService.getHeadersByObject(objectResponseEntity);
+
+                String sessionid = webHeaders.getSessionid();
+                String csrftoken = webHeaders.getCsrftoken();
 
                 log.info("Session id: " + sessionid);
                 log.info("CSRF token: " + csrftoken);
@@ -96,15 +91,10 @@ public class Application {
 
                 HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
-                ResponseEntity<String> response = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
-                for (String cookie : response.getHeaders().get("Set-Cookie")) {
-                    if (cookie.startsWith("sessionid=")) {
-                        sessionid = cookie.substring(0, cookie.indexOf(";"));
-                    }
-                    if (cookie.startsWith("csrftoken=")) {
-                        csrftoken = cookie.substring(0, cookie.indexOf(";"));
-                    }
-                }
+                ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
+                webHeaders = webHeadersService.getHeadersByString(stringResponseEntity);
+                sessionid = webHeaders.getSessionid();
+                csrftoken = webHeaders.getCsrftoken();
 
                 log.info("Session id: " + sessionid);
                 log.info("CSRF token: " + csrftoken);
