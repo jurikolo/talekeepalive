@@ -1,4 +1,4 @@
-package me.jurikolo.talekeepalive;
+package me.jurikolo.talekeepalive.service;
 
 import me.jurikolo.talekeepalive.model.Auth;
 import org.slf4j.Logger;
@@ -12,8 +12,8 @@ import java.util.Properties;
 /**
  * Created by jurikolo on 12.01.17.
  */
-public class TaleProperties {
-    private static final Logger log = LoggerFactory.getLogger(TaleProperties.class);
+public class PropertiesService {
+    private static final Logger log = LoggerFactory.getLogger(PropertiesService.class);
 
     InputStream inputStream;
 
