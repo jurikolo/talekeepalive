@@ -3,6 +3,7 @@ package me.jurikolo.talekeepalive;
 import me.jurikolo.talekeepalive.model.Auth;
 import me.jurikolo.talekeepalive.model.RootObject;
 import me.jurikolo.talekeepalive.model.WebHeaders;
+import me.jurikolo.talekeepalive.service.PropertiesService;
 import me.jurikolo.talekeepalive.service.WebHeadersService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +48,11 @@ public class Application {
             if (files.length == 0) {
                 log.error("Resource directory is empty");
             } else {
-                TaleProperties properties = new TaleProperties();
+                PropertiesService properties = new PropertiesService();
                 Auth auth = new Auth();
                 for (String file : files) {
                     auth = properties.getPropValues(propPath + "/" + file);
-                    log.info(auth.getId());
-                    log.info("File: " + file);
+                    log.info("Processing " + auth.getUsername() + ", file: " + file);
                     doExec(restTemplate, auth, now.get(Calendar.MINUTE));
                 }
             }
@@ -60,26 +60,19 @@ public class Application {
     }
 
     private void doExec(RestTemplate restTemplate, Auth auth, Integer minute) {
-        log.info("Execute GET request in order to fetch CSRFToken");
+        //Execute GET request to fetch hero information
         RootObject rootObject = restTemplate.getForObject(
                 "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), RootObject.class);
 
-        log.info(rootObject.toString());
         try {
-            if(
-                    rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
-                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4") ||
-                    (minute == 1 &&
-                        (rootObject.getData().getAccount().getHero().getAction().getType().equals("2") ||
-                        rootObject.getData().getAccount().getHero().getAction().getType().equals("6") ||
-                        rootObject.getData().getAccount().getHero().getAction().getType().equals("10") ||
-                        rootObject.getData().getAccount().getHero().getAction().getType().equals("15")))) {
+            if(rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
+                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
+                log.info("Rule hit with data: " + rootObject.getData().getAccount().toString());
                 ResponseEntity<Object> objectResponseEntity = restTemplate.getForEntity(
                         "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), Object.class);
                 WebHeadersService webHeadersService = new WebHeadersService();
                 WebHeaders webHeaders = webHeadersService.getHeadersByObject(objectResponseEntity);
 
-                log.info("Now it's time to authorize");
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
                 headers.add("Cookie", webHeaders.getCsrftoken());
@@ -100,9 +93,12 @@ public class Application {
 
                 ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&api_client=jurikolo-1&account=" + auth.getId(), request2, String.class);
                 log.info(response2.toString());
+            } else {
+                log.info("Nothing to do");
             }
         } catch(Exception e) {
             log.error("Exception: " + e);
         }
+        log.info("-----");
     }
 }
