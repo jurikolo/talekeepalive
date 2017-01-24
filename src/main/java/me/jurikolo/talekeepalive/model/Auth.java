@@ -4,9 +4,9 @@ package me.jurikolo.talekeepalive.model;
  * Created by jurikolo on 12.01.17.
  */
 public class Auth {
-    String username;
-    String password;
-    String id;
+    private String username;
+    private String password;
+    private String id;
 
     public String getUsername() {
         return username;

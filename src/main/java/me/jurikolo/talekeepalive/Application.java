@@ -21,7 +21,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
-import java.util.Calendar;
 
 @SpringBootApplication
 public class Application {
@@ -38,9 +37,8 @@ public class Application {
     }
 
     @Bean
-    public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
+    public CommandLineRunner run(RestTemplate restTemplate) {
         return args -> {
-            Calendar now = Calendar.getInstance();
             String propPath = "resources";
             //get list of files
             File dir = new File(propPath);
@@ -49,17 +47,16 @@ public class Application {
                 log.error("Resource directory is empty");
             } else {
                 PropertiesService properties = new PropertiesService();
-                Auth auth = new Auth();
                 for (String file : files) {
-                    auth = properties.getPropValues(propPath + "/" + file);
+                    Auth auth = properties.getPropValues(propPath + "/" + file);
                     log.info("Processing " + auth.getUsername() + ", file: " + file);
-                    doExec(restTemplate, auth, now.get(Calendar.MINUTE));
+                    doExec(restTemplate, auth);
                 }
             }
         };
     }
 
-    private void doExec(RestTemplate restTemplate, Auth auth, Integer minute) {
+    private void doExec(RestTemplate restTemplate, Auth auth) {
         //Execute GET request to fetch hero information
         RootObject rootObject = restTemplate.getForObject(
                 "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), RootObject.class);
@@ -78,18 +75,18 @@ public class Application {
                 headers.add("Cookie", webHeaders.getCsrftoken());
                 headers.add("X-CSRFToken", webHeaders.getCsrftoken().replace("csrftoken=", ""));
 
-                MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
+                MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
                 map.add("email", auth.getUsername());
                 map.add("password", auth.getPassword());
 
-                HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+                HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
                 ResponseEntity<String> stringResponseEntity = restTemplate.postForEntity("http://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=jurikolo-1", request, String.class);
                 webHeaders = webHeadersService.getHeadersByString(stringResponseEntity);
 
                 headers.add("Cookie", webHeaders.getSessionid());
 
-                HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<MultiValueMap<String, String>>(map, headers);
+                HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<>(map, headers);
 
                 ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&api_client=jurikolo-1&account=" + auth.getId(), request2, String.class);
                 log.info(response2.toString());
