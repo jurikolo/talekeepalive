@@ -86,12 +86,17 @@ public class Application {
 
                 headers.add("Cookie", webHeaders.getSessionid());
 
+                //Help hero
                 HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<>(map, headers);
-
                 ResponseEntity<String> response2 = restTemplate.postForEntity("http://the-tale.org/game/abilities/help/api/use?api_version=1.0&api_client=jurikolo-1&account=" + auth.getId(), request2, String.class);
-                log.info(response2.toString());
+                log.info("Help results" + response2.toString());
+
+                //Try to take a card
+                HttpEntity<MultiValueMap<String, String>> request3 = new HttpEntity<>(map, headers);
+                ResponseEntity<String> response3 = restTemplate.postForEntity("http://the-tale.org/game/cards/api/get?api_version=1.0&api_client=jurikolo-1&account=" + auth.getId(), request2, String.class);
+                log.info("Card action: " + response3.toString());
             } else {
-                log.info("Nothing to do");
+                log.info(auth.getUsername() + " has nothing to do (" + rootObject.getData().getAccount().getHero().getAction().getDescription() + ")");
             }
         } catch(Exception e) {
             log.error("Exception: " + e);
