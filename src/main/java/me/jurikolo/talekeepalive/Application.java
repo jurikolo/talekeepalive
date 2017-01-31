@@ -21,6 +21,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.util.Calendar;
 
 @SpringBootApplication
 public class Application {
@@ -39,6 +40,7 @@ public class Application {
     @Bean
     public CommandLineRunner run(RestTemplate restTemplate) {
         return args -> {
+            Calendar now = Calendar.getInstance();
             String propPath = "resources";
             //get list of files
             File dir = new File(propPath);
@@ -50,20 +52,23 @@ public class Application {
                 for (String file : files) {
                     Auth auth = properties.getPropValues(propPath + "/" + file);
                     log.info("Processing " + auth.getUsername() + ", file: " + file);
-                    doExec(restTemplate, auth);
+                    doExec(restTemplate, auth, now.get(Calendar.MINUTE));
                 }
             }
         };
     }
 
-    private void doExec(RestTemplate restTemplate, Auth auth) {
+    private void doExec(RestTemplate restTemplate, Auth auth, Integer minute) {
         //Execute GET request to fetch hero information
         RootObject rootObject = restTemplate.getForObject(
                 "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), RootObject.class);
 
         try {
             if(rootObject.getData().getAccount().getHero().getAction().getType().equals("0") ||
-                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4")) {
+                    rootObject.getData().getAccount().getHero().getAction().getType().equals("4") ||
+                    (minute == 1 &&
+                            (rootObject.getData().getAccount().getHero().getAction().getType().equals("2") ||
+                            rootObject.getData().getAccount().getHero().getAction().getType().equals("6")))) {
                 log.info("Rule hit with data: " + rootObject.getData().getAccount().toString());
                 ResponseEntity<Object> objectResponseEntity = restTemplate.getForEntity(
                         "http://the-tale.org/game/api/info?api_version=1.6&api_client=jurikolo-1&account=" + auth.getId(), Object.class);
