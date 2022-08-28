@@ -3,15 +3,15 @@ import requests
 
 
 parser = argparse.ArgumentParser(description="The program checks hero's status and helps if necessary")
-parser.add_argument("--email", help="Users email")
-parser.add_argument("--password", help="User's password")
+parser.add_argument("--sessionid", help="Session ID from browser")
+parser.add_argument("--csrftoken", help="CSRF token from browser")
 args = parser.parse_args()
 
 api_client = "talekeepalive-0.0.1"
 urls = {
-    "login": "https://the-tale.org/accounts/auth/api/login",
-    "logout": "https://the-tale.org/accounts/auth/api/logout?api_version=1.0&api_client=" + api_client,
-    "auth": "https://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=" + api_client,
+    # "login": "https://the-tale.org/accounts/auth/api/login",
+    # "logout": "https://the-tale.org/accounts/auth/api/logout?api_version=1.0&api_client=" + api_client,
+    # "auth": "https://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=" + api_client,
     "account_info": "https://the-tale.org/accounts/10745/api/show?api_version=1.0&api_client=" + api_client,
     "game_info": "https://the-tale.org/game/api/info?api_version=1.10&api_client=" + api_client,
     "card_list": "https://the-tale.org/game/cards/api/get-cards?api_version=2.0&api_client=" + api_client,
@@ -22,28 +22,15 @@ cards = {
     "quest": 156
 }
 
-client = requests.session()
-client.get(urls.get("login"))
-
-headers = {'referer': 'https://the-tale.org/'}
-csrf_token = ''
-cookies = client.cookies
-for cookie in client.cookies:
-    if cookie.name == 'csrftoken':
-        csrf_token = cookie.value
-
 session = requests.Session()
+cookies = dict({'sessionid': args.sessionid, 'csrftoken': args.csrftoken})
+session.cookies.update(cookies)
+
+headers = dict({'referer': 'https://the-tale.org/', 'X-CSRFToken': args.csrftoken})
+
 data = {
-    'email': args.email,
-    'password': args.password,
-    'csrfmiddlewaretoken': csrf_token
+    'csrfmiddlewaretoken': args.csrftoken
 }
-
-auth = session.post(urls.get("auth"), data=data, headers=headers, cookies=cookies)
-data.pop("email")
-data.pop("password")
-
-print(f"Login result: {auth.text}\n\n")
 
 game_info = session.get(urls.get("game_info"))
 
@@ -81,11 +68,17 @@ if is_lazy:
             break
 
     if card_found:
-        start_questing = session.post(urls.get("use_card") + card.get("uid"), data=data, headers=headers, cookies=cookies, allow_redirects=False)
+        start_questing = session.post(urls.get("use_card") + card.get("uid"),
+                                      data={},
+                                      headers=headers,
+                                      cookies=cookies,
+                                      allow_redirects=False)
+        print(start_questing.request.headers)
+        print(start_questing.request.method)
+        print(start_questing.request.body)
         print(start_questing.status_code)
+        print(start_questing.text)
     else:
         print("There is no matching card to help the hero")
 else:
     print("Hero is questing, nothing to do")
-
-logout = session.get(urls.get("logout"))
