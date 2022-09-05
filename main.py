@@ -1,17 +1,20 @@
 import argparse
 import requests
+import random
+
+
+def gen_csrftoken():
+    size = 64
+    allowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+    return "".join(random.choice(allowed_chars) for x in range(size))
 
 
 parser = argparse.ArgumentParser(description="The program checks hero's status and helps if necessary")
 parser.add_argument("--sessionid", help="Session ID from browser")
-parser.add_argument("--csrftoken", help="CSRF token from browser")
 args = parser.parse_args()
 
 api_client = "talekeepalive-0.0.1"
 urls = {
-    # "login": "https://the-tale.org/accounts/auth/api/login",
-    # "logout": "https://the-tale.org/accounts/auth/api/logout?api_version=1.0&api_client=" + api_client,
-    # "auth": "https://the-tale.org/accounts/auth/api/login?api_version=1.0&api_client=" + api_client,
     "account_info": "https://the-tale.org/accounts/10745/api/show?api_version=1.0&api_client=" + api_client,
     "game_info": "https://the-tale.org/game/api/info?api_version=1.10&api_client=" + api_client,
     "card_list": "https://the-tale.org/game/cards/api/get-cards?api_version=2.0&api_client=" + api_client,
@@ -22,15 +25,11 @@ cards = {
     "quest": 156
 }
 
+csrftoken = gen_csrftoken()
 session = requests.Session()
-cookies = dict({'sessionid': args.sessionid, 'csrftoken': args.csrftoken})
+cookies = dict({'sessionid': args.sessionid, 'csrftoken': csrftoken})
+headers = dict({'referer': 'https://the-tale.org/', 'X-CSRFToken': csrftoken})
 session.cookies.update(cookies)
-
-headers = dict({'referer': 'https://the-tale.org/', 'X-CSRFToken': args.csrftoken})
-
-data = {
-    'csrfmiddlewaretoken': args.csrftoken
-}
 
 game_info = session.get(urls.get("game_info"))
 
